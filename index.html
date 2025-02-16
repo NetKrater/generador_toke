@@ -10,7 +10,7 @@
             margin: 0;
             padding: 20px;
         }
-        h1 {
+        h1, h2 {
             text-align: center;
         }
         form {
@@ -39,12 +39,28 @@
         button:hover {
             background-color: #45a049;
         }
+        /* Botón de cierre de sesión */
+        .logout-btn {
+            position: fixed;
+            top: 10px;
+            right: 10px;
+            padding: 10px;
+            background-color: red;
+            color: white;
+            border: none;
+            cursor: pointer;
+            border-radius: 5px;
+        }
+        .logout-btn:hover {
+            background-color: darkred;
+        }
     </style>
 </head>
 <body>
 
 <h1>Generador de Token para Usuario</h1>
 
+<!-- Formulario para generar un token -->
 <form id="generateTokenForm">
     <label for="username">Nombre de usuario:</label>
     <input type="text" id="username" required />
@@ -61,10 +77,22 @@
 <h2>Token Generado:</h2>
 <p id="generatedToken"></p>
 
+<!-- Botón para cerrar sesión (Eliminar Token del Usuario Actual) -->
+<button class="logout-btn" onclick="logout()">Cerrar Sesión</button>
+
+<!-- Sección para eliminar un token específico -->
+<div style="margin-top: 20px; text-align: center;">
+    <h2>Eliminar Token Específico</h2>
+    <input type="text" id="token-to-delete" placeholder="Ingresa el token aquí" style="padding: 10px; font-size: 16px;">
+    <button onclick="deleteToken(document.getElementById('token-to-delete').value)" style="padding: 10px; background-color: red; color: white; border: none; cursor: pointer;">
+        Eliminar Token
+    </button>
+</div>
+
 <script>
     // Función para generar un ID único para el dispositivo
     const generarDeviceId = () => {
-        return 'device_' + crypto.randomUUID().slice(0, 9);  // Genera un ID único de manera más segura
+        return 'device_' + crypto.randomUUID().slice(0, 9);
     };
 
     // Asignar el device_id generado al campo correspondiente
@@ -73,7 +101,7 @@
 
     // Determinar la URL del servidor según el entorno
     const isDevelopment = location.hostname === 'localhost' || location.hostname === '127.0.0.1';
-    const serverUrl = isDevelopment ? 'http://localhost:4000' : 'https://skytrend.icu';  // Ajusta la URL para producción
+    const serverUrl = isDevelopment ? 'http://localhost:4000' : 'https://skytrend.icu';
 
     // Manejador del formulario para generar el token
     document.getElementById('generateTokenForm').addEventListener('submit', async function(e) {
@@ -94,25 +122,16 @@
         try {
             const response = await fetch(`${serverUrl}/generate-token`, {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                    username: username,
-                    device_id: device_id,
-                    expiration: expiration
-                })
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ username, device_id, expiration })
             });
 
             if (response.ok) {
                 const data = await response.json();
-                console.log('Token generado:', data.token);  // Ver en consola si el token se recibe correctamente
+                console.log('Token generado:', data.token);
                 document.getElementById('generatedToken').textContent = data.token;
-
-                // Almacenar el token en localStorage para usarlo después
-                localStorage.setItem('auth_token', data.token);
+                localStorage.setItem('authToken', data.token);  // Almacenar el token en localStorage
             } else {
-                // Mejorar el manejo de errores: mostrar mensaje de error detallado del backend
                 const errorData = await response.json();
                 alert(`Error: ${errorData.message || 'Error al generar el token'}`);
             }
@@ -121,6 +140,58 @@
             alert('Hubo un error al generar el token');
         }
     });
+
+    // Función para cerrar sesión y eliminar el token del usuario actual
+    async function logout() {
+        const storedToken = localStorage.getItem("authToken");
+
+        if (storedToken) {
+            try {
+                await fetch(`${serverUrl}/logout`, {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                        "Authorization": `Bearer ${storedToken}`
+                    },
+                    credentials: "include"
+                });
+            } catch (error) {
+                console.error("Error invalidando el token en el servidor:", error);
+            }
+        }
+
+        // Borrar el token del navegador y redirigir
+        localStorage.removeItem("authToken");
+        alert("Sesión cerrada correctamente.");
+        window.location.href = "index.html"; // Redirigir a la página principal
+    }
+
+    // Función para eliminar un token específico ingresado por el usuario
+    async function deleteToken(tokenToDelete) {
+        if (!tokenToDelete) {
+            alert("Por favor, ingresa un token válido para eliminar.");
+            return;
+        }
+
+        try {
+            const response = await fetch(`${serverUrl}/delete-token`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ tokenToDelete })
+            });
+
+            const data = await response.json();
+
+            if (response.ok) {
+                alert(data.message);
+            } else {
+                alert(`Error: ${data.error}`);
+            }
+        } catch (error) {
+            console.error("Error eliminando el token:", error);
+            alert("Hubo un error al eliminar el token.");
+        }
+    }
 </script>
 
 </body>
