@@ -26,7 +26,7 @@ socket.on('connect', () => {
 socket.on('disconnect', (reason) => {
     console.log('Desconectado del servidor:', reason);
     if (reason === 'io server disconnect') {
-        socket.connect(); // Reconectar manualmente si el servidor. forzó la desconexión
+        socket.connect(); // Reconectar manualmente si el servidor forzó la desconexión
     }
 });
 
