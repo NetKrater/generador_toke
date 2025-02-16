@@ -75,7 +75,12 @@
 </form>
 
 <h2>Token Generado:</h2>
-<p id="generatedToken"></p>
+<div style="display: flex; align-items: center; justify-content: center; gap: 10px;">
+    <p id="generatedToken" style="background-color: #f4f4f4; padding: 10px; border-radius: 5px; word-break: break-all;"></p>
+    <button onclick="copyTokenToClipboard()" style="padding: 8px; background-color: blue; color: white; border: none; cursor: pointer; border-radius: 5px;">
+        Copiar Token
+    </button>
+</div>
 
 <!-- Botón para cerrar sesión (Eliminar Token del Usuario Actual) -->
 <button class="logout-btn" onclick="logout()">Cerrar Sesión</button>
@@ -140,6 +145,27 @@
             alert('Hubo un error al generar el token');
         }
     });
+
+    // Función para copiar el token generado al portapapeles
+    function copyTokenToClipboard() {
+        const tokenElement = document.getElementById("generatedToken");
+        const tokenText = tokenElement.textContent;
+
+        if (!tokenText) {
+            alert("No hay un token para copiar.");
+            return;
+        }
+
+        // Crear un elemento de texto temporal para copiar
+        const tempInput = document.createElement("textarea");
+        tempInput.value = tokenText;
+        document.body.appendChild(tempInput);
+        tempInput.select();
+        document.execCommand("copy");
+        document.body.removeChild(tempInput);
+
+        alert("Token copiado al portapapeles.");
+    }
 
     // Función para cerrar sesión y eliminar el token del usuario actual
     async function logout() {
