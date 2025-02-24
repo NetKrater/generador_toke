@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Generar Token</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+        }
+        h1, h2 {
+            text-align: center;
+        }
+        form {
+            max-width: 400px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f4f4f4;
+            border-radius: 10px;
+        }
+        label {
+            display: block;
+            margin: 10px 0 5px;
+        }
+        input, select, button {
+            width: 100%;
+            padding: 10px;
+            margin: 10px 0;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+        }
+        button {
+            background-color: #4CAF50;
+            color: white;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #45a049;
+        }
+        /* Botón de cierre de sesión */
+        .logout-btn {
+            position: fixed;
+            top: 10px;
+            right: 10px;
+            padding: 10px;
+            background-color: red;
+            color: white;
+            border: none;
+            cursor: pointer;
+            border-radius: 5px;
+        }
+        .logout-btn:hover {
+            background-color: darkred;
+        }
+    </style>
+</head>
+<body>
+
+<h1>Generador de Token para Usuario</h1>
+
+<!-- Formulario para generar un token -->
+<form id="generateTokenForm">
+    <label for="username">Nombre de usuario:</label>
+    <input type="text" id="username" required />
+
+    <label for="device_id">ID del dispositivo (generado automáticamente):</label>
+    <input type="text" id="device_id" readonly />
+
+    <label for="expiration">Fecha de caducidad:</label>
+    <input type="datetime-local" id="expiration" required />
+
+    <button type="submit">Generar Token</button>
+</form>
+
+<h2>Token Generado:</h2>
+<div style="display: flex; align-items: center; justify-content: center; gap: 10px;">
+    <p id="generatedToken" style="background-color: #f4f4f4; padding: 10px; border-radius: 5px; word-break: break-all;"></p>
+    <button onclick="copyTokenToClipboard()" style="padding: 8px; background-color: blue; color: white; border: none; cursor: pointer; border-radius: 5px;">
+        Copiar Token
+    </button>
+</div>
+
+<!-- Botón para cerrar sesión (Eliminar Token del Usuario Actual) -->
+<button class="logout-btn" onclick="logout()">Cerrar Sesión</button>
+
+<!-- Sección para eliminar un token específico -->
+<div style="margin-top: 20px; text-align: center;">
+    <h2>Eliminar Token Específico</h2>
+    <input type="text" id="token-to-delete" placeholder="Ingresa el token aquí" style="padding: 10px; font-size: 16px;">
+    <button onclick="deleteToken(document.getElementById('token-to-delete').value)" style="padding: 10px; background-color: red; color: white; border: none; cursor: pointer;">
+        Eliminar Token
+    </button>
+</div>
+
+<script src="auth.js"></script>
+<script>
+    // Función para generar un ID único para el dispositivo
+    const generarDeviceId = () => {
+        return 'device_' + crypto.randomUUID().slice(0, 9);
+    };
+
+    // Asignar el device_id generado al campo correspondiente
+    const deviceId = generarDeviceId();
+    document.getElementById('device_id').value = deviceId;
+
+    // Determinar la URL del servidor según el entorno
+    const isDevelopment = location.hostname === 'localhost' || location.hostname === '127.0.0.1';
+    const serverUrl = isDevelopment ? 'http://localhost:4000' : 'https://skytrend.icu';
+
+    // Manejador del formulario para generar el token
+    document.getElementById('generateTokenForm').addEventListener('submit', async function(e) {
+        e.preventDefault();  // Evitar el comportamiento por defecto del formulario
+
+        const username = document.getElementById('username').value;
+        const device_id = document.getElementById('device_id').value;
+        const expiration = document.getElementById('expiration').value;
+
+        // Validar la fecha de expiración
+        const expirationDate = new Date(expiration);
+        if (isNaN(expirationDate.getTime())) {
+            alert('Fecha de expiración no válida');
+            return;
+        }
+
+        // Realizar la solicitud POST al backend para obtener el token
+        try {
+            const response = await fetch(`${serverUrl}/generate-token`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ username, device_id, expiration })
+            });
+
+            if (response.ok) {
+                const data = await response.json();
+                console.log('Token generado:', data.token);
+                document.getElementById('generatedToken').textContent = data.token;
+                localStorage.setItem('authToken', data.token);  // Almacenar el token en localStorage
+            } else {
+                const errorData = await response.json();
+                alert(`Error: ${errorData.message || 'Error al generar el token'}`);
+            }
+        } catch (error) {
+            console.error('Error en la solicitud:', error);
+            alert('Hubo un error al generar el token');
+        }
+    });
+
+    // Función para copiar el token generado al portapapeles
+    function copyTokenToClipboard() {
+        const tokenElement = document.getElementById("generatedToken");
+        const tokenText = tokenElement.textContent;
+
+        if (!tokenText) {
+            alert("No hay un token para copiar.");
+            return;
+        }
+
+        // Crear un elemento de texto temporal para copiar
+        const tempInput = document.createElement("textarea");
+        tempInput.value = tokenText;
+        document.body.appendChild(tempInput);
+        tempInput.select();
+        document.execCommand("copy");
+        document.body.removeChild(tempInput);
+
+        alert("Token copiado al portapapeles.");
+    }
+
+    // Función para cerrar sesión y eliminar el token del usuario actual
+    async function logout() {
+        const storedToken = localStorage.getItem("authToken");
+
+        if (storedToken) {
+            try {
+                await fetch(`${serverUrl}/logout`, {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                        "Authorization": `Bearer ${storedToken}`
+                    },
+                    credentials: "include"
+                });
+            } catch (error) {
+                console.error("Error invalidando el token en el servidor:", error);
+            }
+        }
+
+        // Borrar el token del navegador y redirigir
+        localStorage.removeItem("authToken");
+        alert("Sesión cerrada correctamente.");
+        window.location.href = "index.html"; // Redirigir a la página principal
+    }
+
+    // Función para eliminar un token específico ingresado por el usuario
+    async function deleteToken(tokenToDelete) {
+        if (!tokenToDelete) {
+            alert("Por favor, ingresa un token válido para eliminar.");
+            return;
+        }
+
+        try {
+            const response = await fetch(`${serverUrl}/delete-token`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ tokenToDelete })
+            });
+
+            const data = await response.json();
+
+            if (response.ok) {
+                alert(data.message);
+            } else {
+                alert(`Error: ${data.error}`);
+            }
+        } catch (error) {
+            console.error("Error eliminando el token:", error);
+            alert("Hubo un error al eliminar el token.");
+        }
+    }
+</script>
+
+</body>
+</html>
