@@ -5,55 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Generar Token</title>
     <style>
-        body {
-            font-family: Arial, sans-serif;
-            margin: 0;
-            padding: 20px;
-        }
-        h1, h2 {
-            text-align: center;
-        }
-        form {
-            max-width: 400px;
-            margin: 0 auto;
-            padding: 20px;
-            background-color: #f4f4f4;
-            border-radius: 10px;
-        }
-        label {
-            display: block;
-            margin: 10px 0 5px;
-        }
-        input, select, button {
-            width: 100%;
-            padding: 10px;
-            margin: 10px 0;
-            border: 1px solid #ccc;
-            border-radius: 5px;
-        }
-        button {
-            background-color: #4CAF50;
-            color: white;
-            cursor: pointer;
-        }
-        button:hover {
-            background-color: #45a049;
-        }
-        /* Botón de cierre de sesión */
-        .logout-btn {
-            position: fixed;
-            top: 10px;
-            right: 10px;
-            padding: 10px;
-            background-color: red;
-            color: white;
-            border: none;
-            cursor: pointer;
-            border-radius: 5px;
-        }
-        .logout-btn:hover {
-            background-color: darkred;
-        }
+        /* Estilos anteriores... */
     </style>
 </head>
 <body>
@@ -64,9 +16,6 @@
 <form id="generateTokenForm">
     <label for="username">Nombre de usuario:</label>
     <input type="text" id="username" required />
-
-    <label for="device_id">ID del dispositivo (generado automáticamente):</label>
-    <input type="text" id="device_id" readonly />
 
     <label for="expiration">Fecha de caducidad:</label>
     <input type="datetime-local" id="expiration" required />
@@ -94,58 +43,50 @@
     </button>
 </div>
 
-<script src="auth.js"></script>
 <script>
-    // Función para generar un ID único para el dispositivo
-    const generarDeviceId = () => {
-        return 'device_' + crypto.randomUUID().slice(0, 9);
-    };
-
-    // Asignar el device_id generado al campo correspondiente
-    const deviceId = generarDeviceId();
-    document.getElementById('device_id').value = deviceId;
-
     // Determinar la URL del servidor según el entorno
     const isDevelopment = location.hostname === 'localhost' || location.hostname === '127.0.0.1';
     const serverUrl = isDevelopment ? 'http://localhost:4000' : 'https://skytrend.icu';
 
     // Manejador del formulario para generar el token
     document.getElementById('generateTokenForm').addEventListener('submit', async function(e) {
-        e.preventDefault();  // Evitar el comportamiento por defecto del formulario
+    e.preventDefault();  // Evitar el comportamiento por defecto del formulario
 
-        const username = document.getElementById('username').value;
-        const device_id = document.getElementById('device_id').value;
-        const expiration = document.getElementById('expiration').value;
+    const username = document.getElementById('username').value;
+    const expiration = document.getElementById('expiration').value;
 
-        // Validar la fecha de expiración
-        const expirationDate = new Date(expiration);
-        if (isNaN(expirationDate.getTime())) {
-            alert('Fecha de expiración no válida');
-            return;
+    // Validar la fecha de expiración
+    const expirationDate = new Date(expiration);
+    if (isNaN(expirationDate.getTime())) {
+        alert('Fecha de expiración no válida');
+        return;
+    }
+
+    // Enviar un device_id vacío o fijo
+    const device_id = ''; // O puedes usar un valor fijo como 'admin_device'
+
+    // Realizar la solicitud POST al backend para obtener el token
+    try {
+        const response = await fetch(`${serverUrl}/generate-token`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ username, device_id, expiration })
+        });
+
+        if (response.ok) {
+            const data = await response.json();
+            console.log('Token generado:', data.token);
+            document.getElementById('generatedToken').textContent = data.token;
+            localStorage.setItem('authToken', data.token);  // Almacenar el token en localStorage
+        } else {
+            const errorData = await response.json();
+            alert(`Error: ${errorData.message || 'Error al generar el token'}`);
         }
-
-        // Realizar la solicitud POST al backend para obtener el token
-        try {
-            const response = await fetch(`${serverUrl}/generate-token`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ username, device_id, expiration })
-            });
-
-            if (response.ok) {
-                const data = await response.json();
-                console.log('Token generado:', data.token);
-                document.getElementById('generatedToken').textContent = data.token;
-                localStorage.setItem('authToken', data.token);  // Almacenar el token en localStorage
-            } else {
-                const errorData = await response.json();
-                alert(`Error: ${errorData.message || 'Error al generar el token'}`);
-            }
-        } catch (error) {
-            console.error('Error en la solicitud:', error);
-            alert('Hubo un error al generar el token');
-        }
-    });
+    } catch (error) {
+        console.error('Error en la solicitud:', error);
+        alert('Hubo un error al generar el token');
+    }
+});
 
     // Función para copiar el token generado al portapapeles
     function copyTokenToClipboard() {
@@ -187,7 +128,7 @@
             }
         }
 
-        // Borrar el token del navegador y redirigir.
+        // Borrar el token del navegador y redirigir
         localStorage.removeItem("authToken");
         alert("Sesión cerrada correctamente.");
         window.location.href = "index.html"; // Redirigir a la página principal
