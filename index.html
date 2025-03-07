@@ -50,16 +50,13 @@
 
     // Manejador del formulario para generar el token
     document.getElementById('generateTokenForm').addEventListener('submit', async function(e) {
-    e.preventDefault();
+    e.preventDefault();  // Evitar el comportamiento por defecto del formulario
 
     const username = document.getElementById('username').value;
     const expiration = document.getElementById('expiration').value;
 
-    // Convertir la fecha a UTC
-    const expirationDate = new Date(expiration);
-    const expirationUTC = new Date(expirationDate.getTime() - (expirationDate.getTimezoneOffset() * 60000)).toISOString();
-
     // Validar la fecha de expiración
+    const expirationDate = new Date(expiration);
     if (isNaN(expirationDate.getTime())) {
         alert('Fecha de expiración no válida');
         return;
@@ -73,7 +70,7 @@
         const response = await fetch(`${serverUrl}/generate-token`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ username, device_id, expiration: expirationUTC })
+            body: JSON.stringify({ username, device_id, expiration })
         });
 
         if (response.ok) {
