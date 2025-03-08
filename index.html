@@ -55,8 +55,11 @@
     const username = document.getElementById('username').value;
     const expiration = document.getElementById('expiration').value;
 
-    // Validar la fecha de expiración
+    // Convertir la fecha y hora a UTC
     const expirationDate = new Date(expiration);
+    const expirationUTC = new Date(expirationDate.getTime() - (expirationDate.getTimezoneOffset() * 60000)).toISOString();
+
+    // Validar la fecha de expiración
     if (isNaN(expirationDate.getTime())) {
         alert('Fecha de expiración no válida');
         return;
@@ -70,7 +73,7 @@
         const response = await fetch(`${serverUrl}/generate-token`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ username, device_id, expiration })
+            body: JSON.stringify({ username, device_id, expiration: expirationUTC })
         });
 
         if (response.ok) {
