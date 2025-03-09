@@ -34,15 +34,6 @@
 <!-- Botón para cerrar sesión (Eliminar Token del Usuario Actual) -->
 <button class="logout-btn" onclick="logout()">Cerrar Sesión</button>
 
-<!-- Sección para eliminar un token específico -->
-<div style="margin-top: 20px; text-align: center;">
-    <h2>Eliminar Token Específico</h2>
-    <input type="text" id="token-to-delete" placeholder="Ingresa el token aquí" style="padding: 10px; font-size: 16px;">
-    <button onclick="deleteToken(document.getElementById('token-to-delete').value)" style="padding: 10px; background-color: red; color: white; border: none; cursor: pointer;">
-        Eliminar Token
-    </button>
-</div>
-
 <!-- Sección para actualizar la fecha de expiración de un token -->
 <div style="margin-top: 20px; text-align: center;">
     <h2>Actualizar Fecha de Expiración del Token</h2>
@@ -50,6 +41,15 @@
     <input type="datetime-local" id="new-expiration" style="padding: 10px; font-size: 16px;">
     <button onclick="updateTokenExpiration()" style="padding: 10px; background-color: green; color: white; border: none; cursor: pointer;">
         Actualizar Expiración
+    </button>
+</div>
+
+<!-- Sección para eliminar un token específico -->
+<div style="margin-top: 20px; text-align: center;">
+    <h2>Eliminar Token Específico</h2>
+    <input type="text" id="token-to-delete" placeholder="Ingresa el token aquí" style="padding: 10px; font-size: 16px;">
+    <button onclick="deleteToken(document.getElementById('token-to-delete').value)" style="padding: 10px; background-color: red; color: white; border: none; cursor: pointer;">
+        Eliminar Token
     </button>
 </div>
 
@@ -144,33 +144,6 @@
         window.location.href = "index.html"; // Redirigir a la página principal
     }
 
-    // Función para eliminar un token específico ingresado por el usuario
-    async function deleteToken(tokenToDelete) {
-        if (!tokenToDelete) {
-            alert("Por favor, ingresa un token válido para eliminar.");
-            return;
-        }
-
-        try {
-            const response = await fetch(`${serverUrl}/delete-token`, {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ tokenToDelete })
-            });
-
-            const data = await response.json();
-
-            if (response.ok) {
-                alert(data.message);
-            } else {
-                alert(`Error: ${data.error}`);
-            }
-        } catch (error) {
-            console.error("Error eliminando el token:", error);
-            alert("Hubo un error al eliminar el token.");
-        }
-    }
-
     // Función para actualizar la fecha de expiración de un token
     async function updateTokenExpiration() {
         const tokenToUpdate = document.getElementById('token-to-update').value;
@@ -201,6 +174,33 @@
         } catch (error) {
             console.error("Error actualizando la fecha de expiración del token:", error);
             alert("Hubo un error al actualizar la fecha de expiración del token.");
+        }
+    }
+
+    // Función para eliminar un token específico ingresado por el usuario
+    async function deleteToken(tokenToDelete) {
+        if (!tokenToDelete) {
+            alert("Por favor, ingresa un token válido para eliminar.");
+            return;
+        }
+
+        try {
+            const response = await fetch(`${serverUrl}/delete-token`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ tokenToDelete })
+            });
+
+            const data = await response.json();
+
+            if (response.ok) {
+                alert(data.message);
+            } else {
+                alert(`Error: ${data.error}`);
+            }
+        } catch (error) {
+            console.error("Error eliminando el token:", error);
+            alert("Hubo un error al eliminar el token.");
         }
     }
 </script>
