@@ -43,6 +43,16 @@
     </button>
 </div>
 
+<!-- Sección para actualizar la fecha de expiración de un token -->
+<div style="margin-top: 20px; text-align: center;">
+    <h2>Actualizar Fecha de Expiración del Token</h2>
+    <input type="text" id="token-to-update" placeholder="Ingresa el token aquí" style="padding: 10px; font-size: 16px;">
+    <input type="datetime-local" id="new-expiration" style="padding: 10px; font-size: 16px;">
+    <button onclick="updateTokenExpiration()" style="padding: 10px; background-color: green; color: white; border: none; cursor: pointer;">
+        Actualizar Expiración
+    </button>
+</div>
+
 <script>
     // Determinar la URL del servidor según el entorno
     const isDevelopment = location.hostname === 'localhost' || location.hostname === '127.0.0.1';
@@ -50,43 +60,43 @@
 
     // Manejador del formulario para generar el token
     document.getElementById('generateTokenForm').addEventListener('submit', async function(e) {
-    e.preventDefault();  // Evitar el comportamiento por defecto del formulario
+        e.preventDefault();  // Evitar el comportamiento por defecto del formulario
 
-    const username = document.getElementById('username').value;
-    const expiration = document.getElementById('expiration').value;
+        const username = document.getElementById('username').value;
+        const expiration = document.getElementById('expiration').value;
 
-    // Validar la fecha de expiración
-    const expirationDate = new Date(expiration);
-    if (isNaN(expirationDate.getTime())) {
-        alert('Fecha de expiración no válida');
-        return;
-    }
-
-    // Enviar un device_id vacío o fijo
-    const device_id = ''; // O puedes usar un valor fijo como 'admin_device'
-
-    // Realizar la solicitud POST al backend para obtener el token
-    try {
-        const response = await fetch(`${serverUrl}/generate-token`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ username, device_id, expiration })
-        });
-
-        if (response.ok) {
-            const data = await response.json();
-            console.log('Token generado:', data.token);
-            document.getElementById('generatedToken').textContent = data.token;
-            localStorage.setItem('authToken', data.token);  // Almacenar el token en localStorage
-        } else {
-            const errorData = await response.json();
-            alert(`Error: ${errorData.message || 'Error al generar el token'}`);
+        // Validar la fecha de expiración
+        const expirationDate = new Date(expiration);
+        if (isNaN(expirationDate.getTime())) {
+            alert('Fecha de expiración no válida');
+            return;
         }
-    } catch (error) {
-        console.error('Error en la solicitud:', error);
-        alert('Hubo un error al generar el token');
-    }
-});
+
+        // Enviar un device_id vacío o fijo
+        const device_id = ''; // O puedes usar un valor fijo como 'admin_device'
+
+        // Realizar la solicitud POST al backend para obtener el token
+        try {
+            const response = await fetch(`${serverUrl}/generate-token`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ username, device_id, expiration })
+            });
+
+            if (response.ok) {
+                const data = await response.json();
+                console.log('Token generado:', data.token);
+                document.getElementById('generatedToken').textContent = data.token;
+                localStorage.setItem('authToken', data.token);  // Almacenar el token en localStorage
+            } else {
+                const errorData = await response.json();
+                alert(`Error: ${errorData.message || 'Error al generar el token'}`);
+            }
+        } catch (error) {
+            console.error('Error en la solicitud:', error);
+            alert('Hubo un error al generar el token');
+        }
+    });
 
     // Función para copiar el token generado al portapapeles
     function copyTokenToClipboard() {
@@ -158,6 +168,39 @@
         } catch (error) {
             console.error("Error eliminando el token:", error);
             alert("Hubo un error al eliminar el token.");
+        }
+    }
+
+    // Función para actualizar la fecha de expiración de un token
+    async function updateTokenExpiration() {
+        const tokenToUpdate = document.getElementById('token-to-update').value;
+        const newExpiration = document.getElementById('new-expiration').value;
+
+        if (!tokenToUpdate || !newExpiration) {
+            alert("Por favor, ingresa un token y una nueva fecha de expiración válidos.");
+            return;
+        }
+
+        try {
+            const response = await fetch(`${serverUrl}/update-token-expiration`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ token: tokenToUpdate, newExpiration })
+            });
+
+            const data = await response.json();
+
+            if (response.ok) {
+                alert("Fecha de expiración actualizada correctamente. Nuevo token generado:");
+                console.log("Nuevo token:", data.token);
+                document.getElementById('generatedToken').textContent = data.token;
+                localStorage.setItem('authToken', data.token);  // Almacenar el nuevo token en localStorage
+            } else {
+                alert(`Error: ${data.error}`);
+            }
+        } catch (error) {
+            console.error("Error actualizando la fecha de expiración del token:", error);
+            alert("Hubo un error al actualizar la fecha de expiración del token.");
         }
     }
 </script>
